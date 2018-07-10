@@ -1,0 +1,46 @@
+{
+  "$schema": "https://statics.teams.microsoft.com/sdk/v1.2/manifest/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.0",
+  "id": "8aa816ff-463e-fb3e-1565-a42f6bb02d47",
+  "version": "0.0.1",
+  "packageName": "io.ngrok.fa249ab8",
+  "developer": {
+    "name": "Paul Summers",
+    "websiteUrl": "https://fa249ab8.ngrok.io",
+    "privacyUrl": "https://fa249ab8.ngrok.io/privacy.html",
+    "termsOfUseUrl": "https://fa249ab8.ngrok.io/tou.html"
+  },
+  "name": {
+    "short": "Teams DocumentFinder",
+    "full": "Teams DocumentFinder"
+  },
+  "description": {
+    "short": "Provides a personalized view of your documents.",
+    "full": "Provides a personalized view of your documents from the Graph, OneDrive and SharePoint. You can also filter based on the Team your in for a personalized view of your documents in that Team."
+  },
+  "icons": {
+    "outline": "icon-outline.png",
+    "color": "icon-color.png"
+  },
+  "accentColor": "#D85028",
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://fa249ab8.ngrok.io/documentFinderConfig.html",
+      "canUpdateConfiguration": true,
+      "scopes": [
+        "team"
+      ]
+    }
+  ],
+  "staticTabs": [],
+  "bots": [],
+  "connectors": [],
+  "composeExtensions": [],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "fa249ab8.ngrok.io"
+  ]
+}
