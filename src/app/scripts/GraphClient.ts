@@ -1,11 +1,12 @@
 
 export default class GraphClient {
     private token: any = "";
+    private currentUrl: string = "";
 
     private tokenIsValid = () => {
         return (this.token && this.token.length > 0);
     }
-    public refreshToken = (successMethod, errorMethod) => {
+    public refreshToken = (successMethod, errorMethod, successCallback) => {
         console.log('Fetching token');
         let ls = window.localStorage;
         if(ls){
@@ -13,7 +14,7 @@ export default class GraphClient {
             if (ls.getItem('authtoken')) {
                 console.debug('Token is cached. Returning');
                 this.token = ls.getItem('authtoken');
-                successMethod();
+                successMethod(this.currentUrl, successCallback, errorMethod);
             }
             else {
                 console.debug('Token is invalid or not cached. Retrieving new token.');
@@ -21,13 +22,13 @@ export default class GraphClient {
                     (token) => {
                         this.token = token;
                         ls.setItem('authtoken', token);
-                        successMethod();
+                        successMethod(this.currentUrl, successCallback, errorMethod);
                     }, errorMethod);
             }
         } else {
             this.handleAuth((token) => {
                 this.token = token;
-                successMethod()
+                successMethod(this.currentUrl, successCallback, errorMethod);
             }, errorMethod);
         }
     }
@@ -53,13 +54,14 @@ export default class GraphClient {
     
     public graphRequest = (url: string, success, fail) => {
         console.debug('Calling loadDocuments');
+        this.currentUrl = url;
         if(!this.tokenIsValid()) {
             console.debug('No token. Refreshing...');
-            this.refreshToken(this.graphRequest, fail);
+            this.refreshToken(this.graphRequest, fail, success);
         }
         else {
             var req = new XMLHttpRequest();
-            req.open("GET", url, true);
+            req.open("GET", this.currentUrl, true);
             req.setRequestHeader("Authorization", "Bearer " + this.token);
             req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
 

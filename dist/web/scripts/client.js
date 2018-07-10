@@ -49188,139 +49188,28 @@ var DocumentFinderTab = /** @class */ (function (_super) {
     function DocumentFinderTab(props, state) {
         var _this = _super.call(this, props, state) || this;
         _this.token = "";
-        _this.tokenIsValid = function () {
-            return (_this.token && _this.token.length > 0);
+        _this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+        _this.error = function (error) {
+            console.error("An error occurred. Trace appropriately");
         };
-        _this.loadDocuments = function () {
-            console.debug('Calling loadDocuments');
-            if (!_this.tokenIsValid()) {
-                console.debug('No token. Refreshing...');
-                _this.refreshToken(_this.loadDocuments, _this.authError);
-            }
-            else {
-                var graphEndpoint = "https://graph.microsoft.com/beta/me/insights/trending";
-                var req = new XMLHttpRequest();
-                req.open("GET", graphEndpoint, true);
-                req.setRequestHeader("Authorization", "Bearer " + _this.token);
-                req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-                req.onload = function () {
-                    _this.setState({
-                        documents: req.responseText
-                    });
-                };
-                req.send();
-            }
-        };
-        _this.loadContent2 = function () {
+        _this.reloadContent = function () {
             var client = new GraphClient_1.default();
-            client.graphRequest("https://graph.microsoft.com/beta/me/insights/trending", function (response) {
+            client.graphRequest(_this.currentDocumentEndPoint, function (response) {
                 _this.setState({
                     documents: response
                 });
-            }, function (error) { _this.authError(error); });
-        };
-        _this.updateProfile = function () {
-            console.debug('Calling updateProfile');
-            if (!_this.tokenIsValid()) {
-                console.debug('No token. Refreshing...');
-                _this.refreshToken(_this.updateProfile, _this.authError);
-            }
-            else {
-                console.debug('Have the access token. Calling the Graph');
-                var graphEndpoint = "https://graph.microsoft.com/v1.0/me";
-                var req = new XMLHttpRequest();
-                req.open("GET", graphEndpoint, true);
-                req.setRequestHeader("Authorization", "Bearer " + _this.token);
-                req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-                req.onload = function () {
-                    var result = JSON.parse(req.responseText);
-                    _this.setState({
-                        displayName: result.displayName,
-                        location: result.officeLocation,
-                        jobTitle: result.jobTitle,
-                        alerts: 'Profile information successfully retrieved'
-                    });
-                };
-                req.send();
-            }
-        };
-        _this.authError = function (error) {
-            _this.setState({
-                displayName: 'Not found',
-                location: 'Not found',
-                jobTitle: 'Not found',
-                alerts: "Could not retrieve profile information: " + error
-            });
-        };
-        _this.refreshToken = function (successMethod, errorMethod) {
-            console.log('Fetching token');
-            var ls = window.localStorage;
-            if (ls) {
-                console.debug('Local storage is active');
-                if (ls.getItem('authtoken')) {
-                    console.debug('Token is cached. Returning');
-                    _this.token = ls.getItem('authtoken');
-                    successMethod();
-                }
-                else {
-                    console.debug('Token is invalid or not cached. Retrieving new token.');
-                    _this.handleAuth(function (token) {
-                        _this.token = token;
-                        ls.setItem('authtoken', token);
-                        successMethod();
-                    }, errorMethod);
-                }
-            }
-            else {
-                _this.handleAuth(function (token) {
-                    _this.token = token;
-                    successMethod();
-                }, errorMethod);
-            }
-        };
-        /**
-         * Need to put this in a separate auth library
-         */
-        _this.handleAuth = function (successMethod, errorMethod) {
-            console.debug('Getting new access token');
-            microsoftTeams.authentication.authenticate({
-                url: "/auth.html",
-                width: 700,
-                height: 500,
-                successCallback: function (data) {
-                    console.debug('New token retrieved. Calling back.');
-                    successMethod(data);
-                },
-                failureCallback: function (err) {
-                    console.debug('Retrieval of auth token failed.');
-                    errorMethod(err);
-                }
-            });
+            }, function (error) { _this.error(error); });
         };
         _this.trending = function () {
-            _this.loadDocuments();
+            _this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+            _this.reloadContent();
         };
         _this.recent = function () {
-            _this.loadDocuments();
+            _this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+            _this.reloadContent();
         };
         return _this;
     }
-    DocumentFinderTab.prototype.getProfile = function () {
-        console.log('Running update profile');
-        var graphEndpoint = "https://graph.microsoft.com/v1.0/me";
-        var req = new XMLHttpRequest();
-        req.open("GET", graphEndpoint, false);
-        req.setRequestHeader("Authorization", "Bearer " + this.token);
-        req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-        req.send();
-        var result = JSON.parse(req.responseText);
-        this.setState({
-            displayName: result.displayName,
-            location: result.officeLocation,
-            jobTitle: result.jobTitle,
-            alerts: 'Refreshed profile information'
-        });
-    };
     DocumentFinderTab.prototype.componentWillMount = function () {
         var _this = this;
         this.updateTheme(this.getQueryVariable('theme'));
@@ -49345,7 +49234,7 @@ var DocumentFinderTab = /** @class */ (function (_super) {
                 entityId: "This is not hosted in Microsoft Teams"
             });
         }
-        this.loadDocuments();
+        this.reloadContent();
     };
     /**
      * The render() method to create the UI of the tab
@@ -49374,7 +49263,7 @@ var DocumentFinderTab = /** @class */ (function (_super) {
                                     React.createElement("div", { className: "ms-Grid-row" },
                                         React.createElement(DocumentsComponent_1.default, { documentsData: _this.state.documents }))),
                                 React.createElement("div", { style: styles.section },
-                                    React.createElement(msteams_ui_components_react_1.PrimaryButton, { onClick: _this.loadContent2 }, "Reload Documents"))),
+                                    React.createElement(msteams_ui_components_react_1.PrimaryButton, { onClick: _this.reloadContent }, "Reload Documents"))),
                             React.createElement(msteams_ui_components_react_1.PanelFooter, null,
                                 React.createElement("div", { style: styles.footer }, "(C) Copyright Paul Summers")))));
                 } })));
@@ -49395,10 +49284,11 @@ var GraphClient = /** @class */ (function () {
     function GraphClient() {
         var _this = this;
         this.token = "";
+        this.currentUrl = "";
         this.tokenIsValid = function () {
             return (_this.token && _this.token.length > 0);
         };
-        this.refreshToken = function (successMethod, errorMethod) {
+        this.refreshToken = function (successMethod, errorMethod, successCallback) {
             console.log('Fetching token');
             var ls = window.localStorage;
             if (ls) {
@@ -49406,21 +49296,21 @@ var GraphClient = /** @class */ (function () {
                 if (ls.getItem('authtoken')) {
                     console.debug('Token is cached. Returning');
                     _this.token = ls.getItem('authtoken');
-                    successMethod();
+                    successMethod(_this.currentUrl, successCallback, errorMethod);
                 }
                 else {
                     console.debug('Token is invalid or not cached. Retrieving new token.');
                     _this.handleAuth(function (token) {
                         _this.token = token;
                         ls.setItem('authtoken', token);
-                        successMethod();
+                        successMethod(_this.currentUrl, successCallback, errorMethod);
                     }, errorMethod);
                 }
             }
             else {
                 _this.handleAuth(function (token) {
                     _this.token = token;
-                    successMethod();
+                    successMethod(_this.currentUrl, successCallback, errorMethod);
                 }, errorMethod);
             }
         };
@@ -49445,13 +49335,14 @@ var GraphClient = /** @class */ (function () {
         };
         this.graphRequest = function (url, success, fail) {
             console.debug('Calling loadDocuments');
+            _this.currentUrl = url;
             if (!_this.tokenIsValid()) {
                 console.debug('No token. Refreshing...');
-                _this.refreshToken(_this.graphRequest, fail);
+                _this.refreshToken(_this.graphRequest, fail, success);
             }
             else {
                 var req = new XMLHttpRequest();
-                req.open("GET", url, true);
+                req.open("GET", _this.currentUrl, true);
                 req.setRequestHeader("Authorization", "Bearer " + _this.token);
                 req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
                 req.onload = function () {

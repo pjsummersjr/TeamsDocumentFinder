@@ -39,154 +39,33 @@ export interface IDocumentFinderTabProps extends ITeamsBaseComponentProps {
 export class DocumentFinderTab extends TeamsBaseComponent<IDocumentFinderTabProps, IDocumentFinderTabState> {
  
     private token: any = "";
+    private currentDocumentEndPoint: any = "https://graph.microsoft.com/beta/me/insights/trending";
     constructor(props: IDocumentFinderTabProps, state: IDocumentFinderTabState) {
         super(props, state);
     }
 
-    public getProfile():void {
-        console.log('Running update profile');
-        let graphEndpoint = "https://graph.microsoft.com/v1.0/me";
-        var req = new XMLHttpRequest();
-        req.open("GET", graphEndpoint, false);
-        req.setRequestHeader("Authorization", "Bearer " + this.token);
-        req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-        req.send();
-
-        var result = JSON.parse(req.responseText);
-        this.setState({
-            displayName: result.displayName,
-            location: result.officeLocation,
-            jobTitle: result.jobTitle,
-            alerts: 'Refreshed profile information'
-        });
+    public error = (error: any) => {
+        console.error("An error occurred. Trace appropriately");
     }
 
-    private tokenIsValid = () => {
-        return (this.token && this.token.length > 0);
-    }
-    public loadDocuments = () => {
-        console.debug('Calling loadDocuments');
-        if(!this.tokenIsValid()) {
-            console.debug('No token. Refreshing...');
-            this.refreshToken(this.loadDocuments, this.authError);
-        }
-        else {
-            let graphEndpoint = "https://graph.microsoft.com/beta/me/insights/trending";
-            var req = new XMLHttpRequest();
-            req.open("GET", graphEndpoint, true);
-            req.setRequestHeader("Authorization", "Bearer " + this.token);
-            req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-
-            req.onload = () => {
-                this.setState({
-                    documents: req.responseText
-                })
-            }
-
-            req.send();
-        }
-    }
-
-    public loadContent2 = () => {
+    public reloadContent = () => {
         const client: GraphClient = new GraphClient();
-        client.graphRequest("https://graph.microsoft.com/beta/me/insights/trending", 
+        client.graphRequest(this.currentDocumentEndPoint, 
             (response) => { this.setState({
                 documents: response
             })},
-            (error) => {this.authError(error);}
+            (error) => {this.error(error);}
         )
     }
 
-    public updateProfile = () => {
-        console.debug('Calling updateProfile');
-        if(!this.tokenIsValid()) {
-            console.debug('No token. Refreshing...');
-            this.refreshToken(this.updateProfile, this.authError)
-        }
-        else {
-            console.debug('Have the access token. Calling the Graph');
-            let graphEndpoint = "https://graph.microsoft.com/v1.0/me";
-         
-            var req = new XMLHttpRequest();
-            req.open("GET", graphEndpoint, true);
-            req.setRequestHeader("Authorization", "Bearer " + this.token);
-            req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
-            
-            req.onload = () => {
-                let result = JSON.parse(req.responseText);
-
-                this.setState({
-                    displayName: result.displayName,
-                    location: result.officeLocation,
-                    jobTitle: result.jobTitle,
-                    alerts: 'Profile information successfully retrieved'
-                });
-            }
-            req.send();
-        }
-    }
-
-    public authError = (error) => {
-        this.setState({
-            displayName: 'Not found',
-            location: 'Not found',
-            jobTitle: 'Not found',
-            alerts: `Could not retrieve profile information: ${error}`
-        });
-    }
-
-    public refreshToken = (successMethod, errorMethod) => {
-        console.log('Fetching token');
-        let ls = window.localStorage;
-        if(ls){
-            console.debug('Local storage is active'); 
-            if (ls.getItem('authtoken')) {
-                console.debug('Token is cached. Returning');
-                this.token = ls.getItem('authtoken');
-                successMethod();
-            }
-            else {
-                console.debug('Token is invalid or not cached. Retrieving new token.');
-                this.handleAuth(
-                    (token) => {
-                        this.token = token;
-                        ls.setItem('authtoken', token);
-                        successMethod();
-                    }, errorMethod);
-            }
-        } else {
-            this.handleAuth((token) => {
-                this.token = token;
-                successMethod()
-            }, errorMethod);
-        }
-    }
-    /**
-     * Need to put this in a separate auth library
-     */
-    public handleAuth = (successMethod, errorMethod) => {
-        console.debug('Getting new access token');
-        microsoftTeams.authentication.authenticate({
-            url: "/auth.html",
-            width: 700,
-            height: 500,
-            successCallback: (data) => {    
-                console.debug('New token retrieved. Calling back.');
-                successMethod(data);       
-            },
-            failureCallback: function (err) {
-                console.debug('Retrieval of auth token failed.');
-                errorMethod(err);                
-            }
-        });
-    }
-
     public trending = () => {
-        this.loadDocuments();
+        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+        this.reloadContent();
     }
 
     public recent = () => {
-        this.loadDocuments();
+        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+        this.reloadContent();
     }
 
     public componentWillMount() {
@@ -213,7 +92,7 @@ export class DocumentFinderTab extends TeamsBaseComponent<IDocumentFinderTabProp
                 entityId: "This is not hosted in Microsoft Teams"
             });
         }
-        this.loadDocuments();
+        this.reloadContent();
     }
 
     /** 
@@ -253,7 +132,7 @@ export class DocumentFinderTab extends TeamsBaseComponent<IDocumentFinderTabProp
                                         </div>
                                     </div>
                                     <div style={styles.section}>
-                                        <PrimaryButton onClick={this.loadContent2}>Reload Documents</PrimaryButton>
+                                        <PrimaryButton onClick={this.reloadContent}>Reload Documents</PrimaryButton>
                                     </div>
                                 </PanelBody>
                                 <PanelFooter>
