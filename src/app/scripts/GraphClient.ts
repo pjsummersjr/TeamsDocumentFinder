@@ -53,10 +53,10 @@ export default class GraphClient {
     }
     
     public graphRequest = (url: string, success, fail) => {
-        console.debug('Calling loadDocuments');
+        console.debug('Making a GraphClient.graphRequest');
         this.currentUrl = url;
         if(!this.tokenIsValid()) {
-            console.debug('No token. Refreshing...');
+            console.debug('No token. Refreshing.');
             this.refreshToken(this.graphRequest, fail, success);
         }
         else {
@@ -72,4 +72,20 @@ export default class GraphClient {
             req.send();
         }
     }
+
+/*     public batchRequest = (requests: string[], success, fail) => {
+        console.debug('batchRequest');
+        this.currentUrl = "https://graph.microsoft.com/v1.0/$batch";
+        if(!this.tokenIsValid()) {
+            console.debug('No token. Refreshing.');
+            this.refreshToken(this.batchRequest, fail, success);
+        }
+        else {
+            var req = new XMLHttpRequest();
+            req.open("POST", this.currentUrl, true);
+            req.setRequestHeader('Authorization', "Bearer " + this.token);
+            req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
+
+        }
+    } */
 }

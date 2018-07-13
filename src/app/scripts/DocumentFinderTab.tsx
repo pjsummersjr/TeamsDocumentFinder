@@ -59,12 +59,18 @@ export class DocumentFinderTab extends TeamsBaseComponent<IDocumentFinderTabProp
     }
 
     public trending = () => {
-        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending?$filter=ResourceReference/type eq 'microsoft.graph.driveItem'";
         this.reloadContent();
     }
 
     public recent = () => {
-        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending";
+        alert('This function is not implemented yet');
+        //this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/drive/recent";
+        //this.reloadContent();
+    }
+
+    public sites = () => {
+        this.currentDocumentEndPoint = "https://graph.microsoft.com/beta/me/insights/trending?$filter=ResourceReference/type neq 'microsoft.graph.driveItem'"
         this.reloadContent();
     }
 
@@ -123,8 +129,9 @@ export class DocumentFinderTab extends TeamsBaseComponent<IDocumentFinderTabProp
                                 </PanelHeader>
                                 <PanelBody>
                                     <div style={styles.section}>
-                                        <PrimaryButton onClick={this.trending}>Trending</PrimaryButton>
-                                        <PrimaryButton onClick={this.recent}>Recent</PrimaryButton>
+                                        <PrimaryButton onClick={this.trending}>Trending Documents</PrimaryButton>
+                                        <PrimaryButton onClick={this.recent}>Recent Documents</PrimaryButton>
+                                        <PrimaryButton onClick={this.sites}>Trending Sites</PrimaryButton>
                                     </div>
                                     <div className="ms-Grid">
                                         <div className="ms-Grid-row">
