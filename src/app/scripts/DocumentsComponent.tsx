@@ -63,7 +63,7 @@ export default class DocumentsComponent extends React.Component<IDocumentsCompon
             console.debug('Documents array not null or empty');
             
             return (this.state.documents.map((item, index) => {
-                    return (<DocumentComponent driveItem={item} />);
+                    return (<DocumentComponent driveItem={item} key={item.docId} />);
                 })
             );
         }

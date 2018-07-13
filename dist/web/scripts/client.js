@@ -13170,73 +13170,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var GraphClient = /** @class */ (function () {
     function GraphClient() {
         var _this = this;
-        this.token = "";
-        this.currentUrl = "";
-        this.tokenIsValid = function () {
-            return (_this.token && _this.token.length > 0);
-        };
-        this.refreshToken = function (successMethod, errorMethod, successCallback) {
-            console.log('Fetching token');
-            var ls = window.localStorage;
-            if (ls) {
-                console.debug('Local storage is active');
-                if (ls.getItem('authtoken')) {
-                    console.debug('Token is cached. Returning');
-                    _this.token = ls.getItem('authtoken');
-                    successMethod(_this.currentUrl, successCallback, errorMethod);
-                }
-                else {
-                    console.debug('Token is invalid or not cached. Retrieving new token.');
-                    _this.handleAuth(function (token) {
-                        _this.token = token;
-                        ls.setItem('authtoken', token);
-                        successMethod(_this.currentUrl, successCallback, errorMethod);
-                    }, errorMethod);
-                }
-            }
-            else {
-                _this.handleAuth(function (token) {
-                    _this.token = token;
-                    successMethod(_this.currentUrl, successCallback, errorMethod);
-                }, errorMethod);
-            }
-        };
-        /**
-         * Need to put this in a separate auth library
-         */
-        this.handleAuth = function (successMethod, errorMethod) {
-            console.debug('Getting new access token');
-            microsoftTeams.authentication.authenticate({
-                url: "/auth.html",
-                width: 700,
-                height: 500,
-                successCallback: function (data) {
-                    console.debug('New token retrieved. Calling back.');
-                    successMethod(data);
-                },
-                failureCallback: function (err) {
-                    console.debug('Retrieval of auth token failed.');
-                    errorMethod(err);
-                }
-            });
-        };
         this.graphRequest = function (url, success, fail) {
             console.debug('Making a GraphClient.graphRequest');
-            _this.currentUrl = url;
-            if (!_this.tokenIsValid()) {
-                console.debug('No token. Refreshing.');
-                _this.refreshToken(_this.graphRequest, fail, success);
-            }
-            else {
+            _this.getToken(function (token) {
                 var req = new XMLHttpRequest();
-                req.open("GET", _this.currentUrl, true);
-                req.setRequestHeader("Authorization", "Bearer " + _this.token);
+                req.open("GET", url, true);
+                req.setRequestHeader("Authorization", "Bearer " + token);
                 req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
                 req.onload = function () {
                     success(req.responseText);
                 };
                 req.send();
-            }
+            }, function (e) {
+                console.error("Error retrieving the documents.\n" + e);
+            });
         };
         /*     public batchRequest = (requests: string[], success, fail) => {
                 console.debug('batchRequest');
@@ -13254,6 +13201,45 @@ var GraphClient = /** @class */ (function () {
                 }
             } */
     }
+    GraphClient.prototype.getToken = function (success, error) {
+        var ls = window.localStorage;
+        if (ls && ls.getItem('authtoken')) {
+            console.debug('Token in local storage');
+            if (ls.getItem('authtoken')) {
+                success(ls.getItem('authtoken'));
+            }
+            else {
+                error("Error retrieving auth token from local storage even though I checked to make sure it was already there.");
+            }
+        }
+        else {
+            return this.handleAuth(function (response) {
+                ls.setItem('authtoken', response);
+                success(response);
+            }, function (error) {
+                error("Error retrieving getting new auth token.\n" + error);
+            });
+        }
+    };
+    /**
+     * Need to put this in a separate auth library
+     */
+    GraphClient.prototype.handleAuth = function (successMethod, errorMethod) {
+        console.debug('Getting new access token');
+        microsoftTeams.authentication.authenticate({
+            url: "/auth.html",
+            width: 700,
+            height: 500,
+            successCallback: function (data) {
+                console.debug('New token retrieved. Calling back.');
+                successMethod(data);
+            },
+            failureCallback: function (err) {
+                console.debug('Retrieval of auth token failed.');
+                errorMethod(err);
+            }
+        });
+    };
     return GraphClient;
 }());
 exports.default = GraphClient;
@@ -49440,7 +49426,7 @@ var DocumentsComponent = /** @class */ (function (_super) {
         if (this.state.documents && this.state.documents.length > 0) {
             console.debug('Documents array not null or empty');
             return (this.state.documents.map(function (item, index) {
-                return (React.createElement(DocumentComponent_1.default, { driveItem: item }));
+                return (React.createElement(DocumentComponent_1.default, { driveItem: item, key: item.docId }));
             }));
         }
         else {
@@ -49509,7 +49495,7 @@ var DocumentComponent = /** @class */ (function (_super) {
             this.setState({
                 driveItem: this.props.driveItem
             });
-            this._getFullItem();
+            //this._getFullItem();
         }
     };
     DocumentComponent.prototype.componentWillMount = function () {
@@ -49518,7 +49504,7 @@ var DocumentComponent = /** @class */ (function (_super) {
         });
     };
     DocumentComponent.prototype.componentDidMount = function () {
-        /* Not doing anything in here yet */
+        //this._getFullItem();
     };
     DocumentComponent.prototype.render = function () {
         console.debug('Rendering drive item');

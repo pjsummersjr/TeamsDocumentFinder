@@ -1,41 +1,36 @@
 
 export default class GraphClient {
-    private token: any = "";
-    private currentUrl: string = "";
 
-    private tokenIsValid = () => {
-        return (this.token && this.token.length > 0);
-    }
-    public refreshToken = (successMethod, errorMethod, successCallback) => {
-        console.log('Fetching token');
+    public getToken(success, error): any {
+
         let ls = window.localStorage;
-        if(ls){
-            console.debug('Local storage is active'); 
-            if (ls.getItem('authtoken')) {
-                console.debug('Token is cached. Returning');
-                this.token = ls.getItem('authtoken');
-                successMethod(this.currentUrl, successCallback, errorMethod);
+        if(ls && ls.getItem('authtoken')){
+            console.debug('Token in local storage');
+            
+            if(ls.getItem('authtoken')) { 
+                success(ls.getItem('authtoken'));
+            } else {
+                error("Error retrieving auth token from local storage even though I checked to make sure it was already there.");
             }
-            else {
-                console.debug('Token is invalid or not cached. Retrieving new token.');
-                this.handleAuth(
-                    (token) => {
-                        this.token = token;
-                        ls.setItem('authtoken', token);
-                        successMethod(this.currentUrl, successCallback, errorMethod);
-                    }, errorMethod);
-            }
-        } else {
-            this.handleAuth((token) => {
-                this.token = token;
-                successMethod(this.currentUrl, successCallback, errorMethod);
-            }, errorMethod);
+        }
+        else {
+            return this.handleAuth(
+                (response) => {
+                    ls.setItem('authtoken', response);
+                    success(response);
+                },
+                (error) => {
+                    error(`Error retrieving getting new auth token.\n${error}`);
+                }
+            );
         }
     }
+
+
     /**
      * Need to put this in a separate auth library
      */
-    public handleAuth = (successMethod, errorMethod) => {
+    public handleAuth(successMethod, errorMethod) {
         console.debug('Getting new access token');
         microsoftTeams.authentication.authenticate({
             url: "/auth.html",
@@ -54,23 +49,27 @@ export default class GraphClient {
     
     public graphRequest = (url: string, success, fail) => {
         console.debug('Making a GraphClient.graphRequest');
-        this.currentUrl = url;
-        if(!this.tokenIsValid()) {
-            console.debug('No token. Refreshing.');
-            this.refreshToken(this.graphRequest, fail, success);
-        }
-        else {
-            var req = new XMLHttpRequest();
-            req.open("GET", this.currentUrl, true);
-            req.setRequestHeader("Authorization", "Bearer " + this.token);
-            req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
+    
+        this.getToken(
+            (token) => {
 
-            req.onload = () => {
-                success(req.responseText);
+                var req = new XMLHttpRequest();
+                req.open("GET", url, true);
+                req.setRequestHeader("Authorization", "Bearer " + token);
+                req.setRequestHeader("Accept", "application/json;odata.metadata=minimal;");
+        
+                req.onload = () => {
+                    success(req.responseText);
+                }
+        
+                req.send();
+
+            },
+            (e) => {
+                console.error(`Error retrieving the documents.\n${e}`);
             }
 
-            req.send();
-        }
+        );
     }
 
 /*     public batchRequest = (requests: string[], success, fail) => {
